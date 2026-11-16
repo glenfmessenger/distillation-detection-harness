@@ -203,6 +203,42 @@ def reasoning(root: Path, servegen_dir: str) -> dict:
     return out
 
 
+def dailyheld(root: Path, label: str) -> dict:
+    """B19: held-out false-alarm rate of the hourly-rate statistic with a 24-hour window."""
+    babs = timeline_abs(root / "benign" / label / "timeline_abs.jsonl")
+    by = D.by_identity(babs)
+    accs = sorted(by)
+    vals = np.asarray(
+        [D.d1_rate(sorted(by[a], key=lambda r: r.t_sched_ns), 86400.0).value for a in accs]
+    )
+    full = D.calibrate(vals.tolist(), "high", BUDGET)
+    thr, fpr = [], []
+    for seed in range(SPLITS):
+        perm = np.random.default_rng(seed).permutation(len(accs))
+        ma = np.zeros(len(accs), dtype=bool)
+        ma[perm[: len(accs) // 2]] = True
+        cal = D.calibrate(vals[ma].tolist(), "high", BUDGET)
+        thr.append(cal["threshold"])
+        fpr.append(float(np.mean([bool(D.fires(v, cal)) for v in vals[~ma]])))
+    out = {
+        "n_accounts": len(accs),
+        "threshold": full["threshold"],
+        "n_exceed": full["n_exceed"],
+        "realised": full["n_exceed"] / len(accs),
+        "half_threshold_min": min(thr),
+        "half_threshold_max": max(thr),
+        "heldout_fpr_mean": float(np.mean(fpr)),
+        "heldout_fpr_min": min(fpr),
+        "heldout_fpr_max": max(fpr),
+    }
+    out["p73"] = {
+        "holds": abs(out["heldout_fpr_mean"] - BUDGET) <= 0.005
+        and 40 <= out["half_threshold_min"]
+        and out["half_threshold_max"] <= 60
+    }
+    return out
+
+
 def realonly(root: Path, label: str) -> dict:
     sched = read_schedule(root / "benign" / label / "replay_schedule.jsonl")
     n: dict[str, int] = defaultdict(int)
@@ -288,7 +324,8 @@ def realonly(root: Path, label: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "part", choices=["d10half", "constructed", "clientday", "realonly", "reasoning"]
+        "part",
+        choices=["d10half", "constructed", "clientday", "realonly", "reasoning", "dailyheld"],
     )
     ap.add_argument("--benign-label", default="m3_v1")
     ap.add_argument("--servegen-dir", default="external/ServeGen")
@@ -301,6 +338,7 @@ def main() -> int:
         "clientday": lambda: clientday(root, a.servegen_dir),
         "realonly": lambda: realonly(root, a.benign_label),
         "reasoning": lambda: reasoning(root, a.servegen_dir),
+        "dailyheld": lambda: dailyheld(root, a.benign_label),
     }[a.part]()
     out_dir = root / "results" / "aggregates" / "m15" / a.out_label
     out_dir.mkdir(parents=True, exist_ok=True)

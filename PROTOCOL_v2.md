@@ -625,3 +625,10 @@ benign distribution. (2) *The reasoning tier's own threshold.* The 1% and 10% or
 thresholds on the 73 reasoning-tier client-days of the API aggregates, with their exceedance
 counts. Prediction P72: both lie above the campaign's 2,000 requests, and the 1% threshold is
 below resolution.
+
+**B19 — 2026-11-15 — Registered before any run (decision 60).** A calibration check owed for the
+per-day count of B18, which the manuscript now leans on: its held-out false-alarm rate, by the
+procedure used for every other detector (threshold set on one half of the timeline's accounts,
+rate measured on the other, 20 splits). No lever, no campaign, no schedule. Prediction P73: the
+held-out false-alarm rate lies within half a point of 1% and the threshold on a half lies between
+40 and 60 requests in 24 hours.

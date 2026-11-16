@@ -614,5 +614,12 @@
   "prediction": "the reasoning tier's own 1% and 10% thresholds on its 73 client-days lie above the campaign's 2,000 requests, and the 1% threshold is below resolution",
   "outcome": "held: 47,449 (no exceedance) and 17,967 (7 exceedances), both below resolution; 27% of its clients exceed the campaign's size",
   "finding": "F100"
+ },
+ {
+  "id": "P73",
+  "protocol": "v2.0 am. 19",
+  "prediction": "the per-day count's held-out false-alarm rate lies within half a point of 1% and its threshold on a half of the accounts lies between 40 and 60 requests in 24 hours",
+  "outcome": "held: 0.97% held out (0.82% to 1.04% over 20 splits); half-population threshold 48 to 51",
+  "finding": "F101"
  }
 ]

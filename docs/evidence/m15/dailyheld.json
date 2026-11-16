@@ -1,0 +1,14 @@
+{
+ "n_accounts": 118465,
+ "threshold": 49.0,
+ "n_exceed": 1155,
+ "realised": 0.00974971510572743,
+ "half_threshold_min": 48.0,
+ "half_threshold_max": 51.0,
+ "heldout_fpr_mean": 0.009697297114783985,
+ "heldout_fpr_min": 0.008221768271065116,
+ "heldout_fpr_max": 0.010433373288538484,
+ "p73": {
+  "holds": true
+ }
+}

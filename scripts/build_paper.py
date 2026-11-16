@@ -230,6 +230,8 @@ def main() -> int:
                 (1, 0.5),
                 (10, None),
                 (10, 0.99),
+                (10, 0.9),
+                (10, 0.5),
                 (100, None),
                 (100, 0.99),
                 (1000, None),
@@ -865,14 +867,21 @@ def build_review_tables() -> None:
         mm = re.search(r"P(\d+)", q["id"])
         return _is_revision(q) and int(mm.group(1)) >= 43
 
+    def _am(q) -> int:
+        m = re.search(r"am\. (\d+)", q["protocol"])
+        return int(m.group(1)) if m else 0
+
+    listed = 0
     for fname, subset in (
         ("predictions2.tex", [q for q in preds if not _is_revision(q)]),
         ("predictions3.tex", [q for q in preds if _is_revision(q) and not _is_adversary(q)]),
         ("predictions4.tex", [q for q in preds if _is_adversary(q) and "am. 8" in q["protocol"]]),
         (
             "predictions5.tex",
-            [q for q in preds if _is_adversary(q) and "am. 8" not in q["protocol"]],
+            [q for q in preds if _is_adversary(q) and _am(q) in range(9, 14)],
         ),
+        ("predictions6.tex", [q for q in preds if _is_adversary(q) and _am(q) in (14, 15)]),
+        ("predictions7.tex", [q for q in preds if _is_adversary(q) and _am(q) >= 16]),
     ):
         _table(
             fname,
@@ -883,6 +892,9 @@ def build_review_tables() -> None:
                 for q in subset
             ],
         )
+        listed += len(subset)
+    if listed != len(preds):
+        raise RuntimeError(f"register tables list {listed} of {len(preds)} predictions")
     n_fail = sum(1 for q in preds if q["outcome"].startswith("failed"))
     n_unt = sum(1 for q in preds if q["outcome"].startswith("not test"))
     macro("NPredAll", intc(len(preds)))
@@ -2157,6 +2169,22 @@ def build_b16() -> None:
     macro("ApiLargeDayBelow", pct(cd["tiers"]["m-large"]["share_below_campaign"]) + "\\%")
     macro("ApiLangDayMedian", intc(round(cd["language_pooled"]["median_busiest_hour"], -2)))
     macro("ApiNLangClientDays", intc(cd["language_pooled"]["n_client_days"]))
+    dh2 = load(EV / "m15" / "dailyheld.json")
+    macro("DailyRealised", pct(dh2["realised"], 2) + "\\%")
+    macro("DailyHeldout", pct(dh2["heldout_fpr_mean"], 2) + "\\%")
+    macro("DailyHeldMin", pct(dh2["heldout_fpr_min"], 2) + "\\%")
+    macro("DailyHeldMax", pct(dh2["heldout_fpr_max"], 2) + "\\%")
+    n_req = load(EV / "m4" / "levers_c_real.json")["n_campaign_records"]
+    bound_days = n_req / dh2["threshold"]
+    macro("DailyBoundDays", intc(round(bound_days)))
+    clr = load(EV / "m13" / "clearing_daily.json")
+    ten2 = next(
+        c for c in clr["cells"] if c["source"] == "price" and c["n"] == 10 and c["cap"] == 2
+    )
+    rec_days = 10 * ten2["hours"] / 24
+    macro("CapTwoAccountDays", intc(round(rec_days)))
+    if not 1.8 <= rec_days / bound_days <= 2.2:
+        raise RuntimeError("text says the recorded cell costs about twice the bound")
     rs = load(EV / "m15" / "reasoning.json")
     macro("ReasonThrOne", intc(round(rs["0.01"]["threshold"], -2)))
     macro("ReasonThrTen", intc(round(rs["0.1"]["threshold"], -2)))
